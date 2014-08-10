@@ -12,6 +12,7 @@
 #![crate_type = "dylib"]
 #![crate_id = "stegpeg"]
 
+#![feature(macro_rules)]
 #![allow(ctypes)]
 
 // pub use libjpeg;
