@@ -26,8 +26,6 @@ pub mod libjpeg {
   type JCOEFPTR = *JCOEF;
 
   type JDIMENSION = c_uint;
-  type J_COLOR_SPACE = c_int; //TODO: add enum
-  type J_DCT_METHOD = c_int; //TODO: add enum
 
   struct JQUANT_TBL {
     quantval: *u16, //[DCTSIZE2];
@@ -96,10 +94,11 @@ pub mod libjpeg {
   }
 
   // TODO: enum J_COLOR_SPACE
-
+  type J_COLOR_SPACE = c_int;
   // TODO: enum J_DCT_METHOD
-
+  type J_DCT_METHOD = c_int;
   // TODO: enum J_DITHER_MODE
+  type J_DITHER_MODE = c_int;
 
   macro_rules! jpeg_common_fields_struct (
     ($name:ident, $($element: ident: $ty: ty),*) => {
@@ -119,7 +118,7 @@ pub mod libjpeg {
 
   type j_common_ptr = *jpeg_common_struct;
   type j_compress_ptr = *jpeg_compress_struct;
-  // type j_decompress_ptr = *jpeg_decompress_struct;
+  type j_decompress_ptr = *jpeg_decompress_struct;
 
   jpeg_common_fields_struct!{ jpeg_compress_struct,
     dest: *jpeg_destination_mgr,
@@ -225,7 +224,137 @@ pub mod libjpeg {
     script_space_size: c_int
   }
 
-  // TODO: struct jpeg_decompress_struct
+  jpeg_common_fields_struct!{ jpeg_decompress_struct,
+    src: *jpeg_source_mgr,
+
+    image_width: JDIMENSION,
+    image_height: JDIMENSION,
+    num_components: c_int,
+    jpeg_color_space: J_COLOR_SPACE,
+
+    out_color_space: J_COLOR_SPACE,
+
+    scale_num: c_uint,
+    scale_denom: c_uint,
+
+    output_gamma: c_double,
+
+    buffered_image: boolean,
+    raw_data_out: boolean,
+
+    dct_method: J_DCT_METHOD,
+    do_fancy_upsampling: boolean,
+    do_block_smoothing: boolean,
+
+    quantize_colors: boolean,
+
+    dither_mode: J_DITHER_MODE,
+    two_pass_quantize: boolean,
+    desired_number_of_colors: c_int,
+
+    enable_1pass_quant: boolean,
+    enable_external_quant: boolean,
+    enable_2pass_quant: boolean,
+
+    output_width: JDIMENSION,
+    output_height: JDIMENSION,
+    out_color_components: c_int,
+    output_components: c_int,
+
+    rec_outbuf_height: c_int,
+
+    actual_number_of_colors: c_int,
+    colormap: JSAMPARRAY,
+
+    output_scanline: JDIMENSION,
+
+    input_scan_number: c_int,
+    input_iMCU_row: JDIMENSION,
+
+    output_scan_number: c_int,
+    output_iMCU_row: JDIMENSION,
+
+    coef_bits: **c_int, //[DCTSIZE2],
+
+    quant_tbl_ptrs: **JQUANT_TBL, //[NUM_QUANT_TBLS],
+
+    dc_huff_tbl_ptrs: **JHUFF_TBL, //[NUM_HUFF_TBLS],
+    ac_huff_tbl_ptrs: **JHUFF_TBL, //[NUM_HUFF_TBLS],
+
+    data_precision: c_int,
+
+    comp_info: *jpeg_component_info,
+
+  //#if JPEG_LIB_VERSION >= 80
+  //  is_baseline: boolean,
+  //#endif
+    progressive_mode: boolean,
+    arith_code: boolean,
+
+    arith_dc_L: *u8, //[NUM_ARITH_TBLS],
+    arith_dc_U: *u8, //[NUM_ARITH_TBLS],
+    arith_ac_K: *u8, //[NUM_ARITH_TBLS],
+
+    restart_interval: c_uint,
+
+    saw_JFIF_marker: boolean,
+
+    JFIF_major_version: u8,
+    JFIF_minor_version: u8,
+    density_unit: u8,
+    X_density: u16,
+    Y_density: u16,
+    saw_Adobe_marker: boolean,
+    Adobe_transform: u8,
+
+    CCIR601_sampling: boolean,
+
+    marker_list: jpeg_saved_marker_ptr,
+
+    max_h_samp_factor: c_int,
+    max_v_samp_factor: c_int,
+
+  //#if JPEG_LIB_VERSION >= 70
+  //  min_DCT_h_scaled_size: c_int,
+  //  min_DCT_v_scaled_size: c_int,
+  //#else
+    min_DCT_scaled_size: c_int,
+  //#endif
+
+    total_iMCU_rows: JDIMENSION,
+
+    sample_range_limit: *JSAMPLE,
+    comps_in_scan: c_int,
+    cur_comp_info: **jpeg_component_info, //[MAX_COMPS_IN_SCAN],
+
+    MCUs_per_row: JDIMENSION,
+    MCU_rows_in_scan: JDIMENSION,
+
+    blocks_in_MCU: c_int,
+    MCU_membership: *c_int, //[D_MAX_BLOCKS_IN_MCU],
+
+    Ss: c_int, Se: c_int, Ah: c_int, Al: c_int,
+
+    //#if JPEG_LIB_VERSION >= 80
+    //  block_size: c_int,
+    //  natural_order: *c_int,
+    //  lim_Se: c_int,
+    //#endif
+
+    unread_marker: c_int,
+
+    master: *jpeg_decomp_master,
+    main: *jpeg_d_main_controller,
+    coef: *jpeg_d_coef_controller,
+    post: *jpeg_d_post_controller,
+    inputctl: *jpeg_input_controller,
+    marker: *jpeg_marker_reader,
+    entropy: *jpeg_entropy_decoder,
+    idct: *jpeg_inverse_dct,
+    upsample: *jpeg_upsampler,
+    cconvert: *jpeg_color_deconverter,
+    cquantize: *jpeg_color_quantizer
+  }
 
   struct jpeg_error_mgr {
     error_exit: extern fn(cinfo: j_common_ptr),
@@ -267,19 +396,17 @@ pub mod libjpeg {
     term_destination: extern fn(cinfo: j_compress_ptr)
   }
 
-  /*
   struct jpeg_source_mgr {
     next_input_byte: *JOCTET,
     bytes_in_buffer: size_t,
 
     init_source: extern fn(cinfo: j_decompress_ptr),
     fill_input_buffer: extern fn(cinfo: j_decompress_ptr) -> boolean,
-    skip_input_data: extern fn(cinfo: j_decompress_ptr, long num_bytes),
+    skip_input_data: extern fn(cinfo: j_decompress_ptr, num_bytes: c_long),
     resync_to_restart: extern fn(cinfo: j_decompress_ptr, desired: c_int)
                                  -> boolean,
     term_source: extern fn(cinfo: j_decompress_ptr)
   }
-  */
 
   type jvirt_sarray_ptr = *jvirt_sarray_control;
   type jvirt_barray_ptr = *jvirt_barray_control;
@@ -339,19 +466,30 @@ pub mod libjpeg {
   struct jpeg_downsampler { dummy: c_long }
   struct jpeg_forward_dct { dummy: c_long }
   struct jpeg_entropy_encoder { dummy: c_long }
+  struct jpeg_decomp_master { dummy: c_long }
+  struct jpeg_d_main_controller { dummy: c_long }
+  struct jpeg_d_coef_controller { dummy: c_long }
+  struct jpeg_d_post_controller { dummy: c_long }
+  struct jpeg_input_controller { dummy: c_long }
+  struct jpeg_marker_reader { dummy: c_long }
+  struct jpeg_entropy_decoder { dummy: c_long }
+  struct jpeg_inverse_dct { dummy: c_long }
+  struct jpeg_upsampler { dummy: c_long }
+  struct jpeg_color_deconverter { dummy: c_long }
+  struct jpeg_color_quantizer { dummy: c_long }
 
   #[link(name = "jpeglib_macrofuns")]
   extern {
     fn jpeg_create_compress(cinfo: j_compress_ptr);
-    // fn jpeg_create_decompress(cinfo: j_decompress_ptr);
+    fn jpeg_create_decompress(cinfo: j_decompress_ptr);
   }
 
   #[link(name = "jpeg")]
   extern {
     fn jpeg_CreateCompress(cinfo: j_compress_ptr, version: c_int,
                            structsize: size_t);
-    // fn jpeg_CreateDecompress(cinfo: j_decompress_ptr, version: c_int,
-    //                          structsize: size_t);
+    fn jpeg_CreateDecompress(cinfo: j_decompress_ptr, version: c_int,
+                             structsize: size_t);
 
     fn jpeg_abort_compress(cinfo: j_compress_ptr);
 
@@ -365,7 +503,7 @@ pub mod libjpeg {
     fn jpeg_default_colorspace(cinfo: j_compress_ptr);
 
     fn jpeg_destroy_compress(cinfo: j_compress_ptr);
-    //fn jpeg_destroy_decompress(cinfo: j_decompress_ptr);
+    fn jpeg_destroy_decompress(cinfo: j_decompress_ptr);
 
     fn jpeg_quality_scaling(quality: c_int) -> c_int;
 
@@ -379,7 +517,7 @@ pub mod libjpeg {
     fn jpeg_simple_progression(cinfo: j_compress_ptr);
 
     fn jpeg_stdio_dest(cinfo: j_compress_ptr, outfile: *FILE);
-    // fn jpeg_stdio_src(cinfo: j_decompress_ptr, infile: *FILE);
+     fn jpeg_stdio_src(cinfo: j_decompress_ptr, infile: *FILE);
 
     fn jpeg_std_error(err: *jpeg_error_mgr) -> *jpeg_error_mgr;
 
@@ -401,23 +539,23 @@ pub mod libjpeg {
     fn jpeg_write_m_byte(cinfo: j_compress_ptr, val: c_int);
     fn jpeg_write_tables(cinfo: j_compress_ptr);
 
-    // fn jpeg_read_header (cinfo: j_decompress_ptr, require_image: boolean)
-    //                      -> c_int;
+    fn jpeg_read_header (cinfo: j_decompress_ptr, require_image: boolean)
+                         -> c_int;
 
-    // fn jpeg_start_decompress(cinfo: j_decompress_ptr) -> boolean;
-    // fn jpeg_read_scanlines(cinfo: j_decompress_ptr, scanlines: JSAMPARRAY,
-    //                        max_lines: JDIMENSION) -> JDIMENSION;
-    // fn jpeg_finish_decompress(cinfo: j_decompress_ptr) -> boolean;
-    // fn jpeg_read_raw_data(cinfo: j_decompress_ptr, data: JSAMPIMAGE,
-    //                       max_lines: JDIMENSION) -> JDIMENSION;
+    fn jpeg_start_decompress(cinfo: j_decompress_ptr) -> boolean;
+    fn jpeg_read_scanlines(cinfo: j_decompress_ptr, scanlines: JSAMPARRAY,
+                           max_lines: JDIMENSION) -> JDIMENSION;
+    fn jpeg_finish_decompress(cinfo: j_decompress_ptr) -> boolean;
+    fn jpeg_read_raw_data(cinfo: j_decompress_ptr, data: JSAMPIMAGE,
+                          max_lines: JDIMENSION) -> JDIMENSION;
 
-    // fn jpeg_has_multiple_scans(cinfo: j_decompress_ptr) -> boolean;
-    // fn jpeg_start_output(cinfo: j_decompress_ptr, scan_number: c_int)
-    //                      -> boolean;
-    // fn jpeg_finish_output(cinfo: j_decompress_ptr) -> boolean;
-    // fn jpeg_input_complete(cinfo: j_decompress_ptr) -> boolean;
-    // fn jpeg_new_colormap(cinfo: j_decompress_ptr);
-    // jpeg_consume_input(j_decompress_ptr cinfo) -> c_int;
+    fn jpeg_has_multiple_scans(cinfo: j_decompress_ptr) -> boolean;
+    fn jpeg_start_output(cinfo: j_decompress_ptr, scan_number: c_int)
+                         -> boolean;
+    fn jpeg_finish_output(cinfo: j_decompress_ptr) -> boolean;
+    fn jpeg_input_complete(cinfo: j_decompress_ptr) -> boolean;
+    fn jpeg_new_colormap(cinfo: j_decompress_ptr);
+    fn jpeg_consume_input(cinfo: j_decompress_ptr) -> c_int;
 
     //#if JPEG_LIB_VERSION >= 70
     // fn jpeg_default_qtables (cinfo: j_compress_ptr, force_baseline: boolean);
