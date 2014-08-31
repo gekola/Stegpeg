@@ -1,15 +1,27 @@
 all: libstegpeg
 
-libstegpeg: src/libstegpeg/lib.rs lib/libjpeglib_macrofuns.a
-	mkdir -p lib
-	rustc -L=./lib --out-dir=lib $<
+rebuild: clean all
 
-lib/libjpeglib_macrofuns.a: c_src/jpeglib_macrofuns.c
-	$(CC) $< -c -o $<.o
-	$(AR) rcs $@ $<.o
+lib:
+	mkdir -p lib
+
+libstegpeg: src/libstegpeg/lib.rs lib/libjpeglib_macrofuns.a
+	rustc -g -L ./lib --out-dir=lib $<
+
+lib/libjpeglib_macrofuns.a: c_src/jpeglib_macrofuns.o lib
+	$(AR) rcs $@ $<
+
+tests/test: tests/main.rs libstegpeg
+	rustc -g -L ./lib --test -o $@ $<
+
+%.o: %.c
+	$(CC) $< -c -o $@
+
 
 clean:
-	rm -rf lib
+	rm -rf lib tests/test c_src/*.o
 
+test: tests/test
+	$<
 
-.PHONY: libstegpeg
+.PHONY: all rebuild clean test libstegpeg
