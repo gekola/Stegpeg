@@ -11,11 +11,11 @@ libstegpeg: src/libstegpeg/lib.rs lib/libjpeglib_macrofuns.a
 lib/libjpeglib_macrofuns.a: c_src/jpeglib_macrofuns.o lib
 	$(AR) rcs $@ $<
 
-tests/test: tests/main.rs libstegpeg
-	rustc -g -L ./lib --test -o $@ $<
+tests/test: tests/main.rs libstegpeg lib/libjpeglib_macrofuns.a
+	rustc -g -L ./lib -l stegpeg --test -o $@ $<
 
 %.o: %.c
-	$(CC) $< -c -o $@
+	$(CC) -fPIC $< -c -o $@
 
 
 clean:

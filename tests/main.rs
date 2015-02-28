@@ -1,57 +1,59 @@
-#![feature(globs)]
+#![feature(libc)]
+#![feature(std_misc)]
 
 extern crate stegpeg;
 extern crate libc;
 
 //use libc;
 use std::default::Default;
+use std::ffi::CString;
 
-use stegpeg::libjpeg::*;
+use stegpeg::libjpeg;
 
 #[test]
 fn test_write() {
-  let mut image_buffer = [0 as libc::c_uchar, ..120_000];
+  let mut image_buffer = [0 as libc::c_uchar; 120_000];
 
-  for i in range(1u, 120_000) {
+  for i in 1..120_000 {
     if i % 3 == 0 {
       image_buffer[i] = 255 as libc::c_uchar
     }
   }
 
   unsafe {
-    let jerr = jpeg_error_mgr{ ..Default::default() };
-    let mut cinfo = jpeg_compress_struct{ ..Default::default() };
-    let pcinfo = &cinfo as j_compress_ptr;
-    cinfo.err = jpeg_std_error(&jerr);
+    let mut jerr = libjpeg::jpeg_error_mgr{ ..Default::default() };
+    let mut cinfo = libjpeg::jpeg_compress_struct{ ..Default::default() };
+    let pcinfo = &mut cinfo as libjpeg::j_compress_ptr;
+    cinfo.err = libjpeg::jpeg_std_error(&mut jerr);
 
-    let row_stride: uint;
+    let row_stride: usize;
 
-    jpeg_create_compress_fn(&*pcinfo);
+    libjpeg::jpeg_create_compress_fn(pcinfo);
 
-    let filename = "/tmp/test.jpeg".to_c_str();
-    let outfile = libc::fopen(filename.unwrap(), "wb".to_c_str().unwrap());
-    jpeg_stdio_dest(&*pcinfo, outfile);
+    let filename = CString::new("/tmp/test.jpeg");
+    let outfile = libc::fopen(filename.unwrap().as_ptr(), CString::new("wb").unwrap().as_ptr());
+    libjpeg::jpeg_stdio_dest(&mut *pcinfo, outfile);
 
-    let image_width = 200u;
+    let image_width = 200usize;
     cinfo.image_width = image_width as libc::c_uint;
-    cinfo.image_height = 200;
+    cinfo.image_height = 200u32;
     cinfo.input_components = 3;
     cinfo.in_color_space = 2; // RGB
 
-    jpeg_set_defaults(&*pcinfo);
-    jpeg_set_quality(&*pcinfo, 5, 1);
-    jpeg_start_compress(&*pcinfo, 1);
+    libjpeg::jpeg_set_defaults(&mut *pcinfo);
+    libjpeg::jpeg_set_quality(pcinfo, 5, 1);
+    libjpeg::jpeg_start_compress(pcinfo, 1);
 
     row_stride = image_width * 3;
 
     while cinfo.next_scanline < cinfo.image_height {
-      let row_pointer =
-        &image_buffer[cinfo.next_scanline as uint * row_stride] as JSAMPROW;
-      jpeg_write_scanlines(&*pcinfo, &row_pointer as JSAMPARRAY, 1);
+      let mut row_pointer =
+        &mut image_buffer[cinfo.next_scanline as usize * row_stride] as libjpeg::JSAMPROW;
+      libjpeg::jpeg_write_scanlines(pcinfo, &mut row_pointer as libjpeg::JSAMPARRAY, 1);
     }
 
-    jpeg_finish_compress(&cinfo);
+    libjpeg::jpeg_finish_compress(&mut cinfo);
     libc::fclose(outfile);
-    jpeg_destroy_compress(&cinfo);
+    libjpeg::jpeg_destroy_compress(&mut cinfo);
   }
 }
