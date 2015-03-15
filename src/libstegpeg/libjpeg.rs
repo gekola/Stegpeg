@@ -3,26 +3,37 @@
 #![allow(non_snake_case)]
 #![allow(missing_copy_implementations)]
 
-extern crate libc;
-
 use std::default::Default;
 use std::ptr;
-use self::libc::{
+use libc::{
   c_char, c_double, c_int, c_long, c_short, size_t, c_uchar, c_uint, c_void,
   FILE
 };
+
+pub const DCTSIZE2: usize = 64;
+
+pub const NUM_ARITH_TBLS: usize = 16;
+pub const NUM_QUANT_TBLS: usize = 4;
+pub const NUM_HUFF_TBLS: usize = 4;
+
+pub const MAX_COMPS_IN_SCAN: usize = 4;
+pub const MAX_COMPONENTS: usize = 10;
+pub const C_MAX_BLOCKS_IN_MCU: usize = 10;
+pub const D_MAX_BLOCKS_IN_MCU: usize = 10;
+
+pub const JPOOL_IMAGE: u8 = 1;
 
 pub type boolean = c_int;
 
 pub type JCOEF = c_short;
 pub type JOCTET = c_uchar;
 
-pub type JSAMPLE = libc::c_uchar; // !!!
+pub type JSAMPLE = c_uchar;
 pub type JSAMPROW = *mut JSAMPLE;
 pub type JSAMPARRAY = *mut JSAMPROW;
 pub type JSAMPIMAGE = *mut JSAMPARRAY;
 
-pub type JBLOCK = [JCOEF; 64]; //[DCTSIZE2];
+pub type JBLOCK = [JCOEF; DCTSIZE2];
 pub type JBLOCKROW = *mut JBLOCK;
 pub type JBLOCKARRAY = *mut JBLOCKROW;
 pub type JBLOCKIMAGE = *mut JBLOCKARRAY;
@@ -32,7 +43,7 @@ pub type JDIMENSION = c_uint;
 
 #[repr(C)]
 pub struct JQUANT_TBL {
-  pub quantval: [u16; 64], //[DCTSIZE2];
+  pub quantval: [u16; DCTSIZE2],
   pub sent_table: boolean
 }
 
@@ -84,7 +95,7 @@ pub struct jpeg_component_info {
 #[repr(C)]
 pub struct jpeg_scan_info {
   pub comps_in_scan: c_int,
-  pub component_index: [c_int; 4], //[MAX_COMPS_IN_SCAN],
+  pub component_index: [c_int; MAX_COMPS_IN_SCAN],
   pub Ss: c_int, pub Se: c_int,
   pub Ah: c_int, pub Al: c_int
 }
@@ -113,7 +124,7 @@ macro_rules! jpeg_common_fields_struct (
     pub struct $name {
       pub err: *mut jpeg_error_mgr,
       pub mem: *mut jpeg_memory_mgr,
-      pub jpeg_progress_mgr: *mut jpeg_progress_mgr,
+      pub progress: *mut jpeg_progress_mgr,
       pub client_data: *mut c_void,
       pub is_decompressor: boolean,
       pub global_state: c_int,
@@ -151,21 +162,21 @@ jpeg_common_fields_struct!{ jpeg_compress_struct,
   jpeg_color_space: J_COLOR_SPACE,
 
   comp_info: *mut jpeg_component_info,
-  quant_tbl_ptrs: [*mut JQUANT_TBL; 4], //[NUM_QUANT_TBLS],
+  quant_tbl_ptrs: [*mut JQUANT_TBL; NUM_QUANT_TBLS],
 
   //#[cfg(JPEG_LIB_VERSION >= 70)]
-  // q_scale_factor: *c_int, //[NUM_QUANT_TBLS],
+  // q_scale_factor: [c_int; NUM_QUANT_TBLS],
   //#[end]
 
-  dc_huff_tbl_ptrs: [*mut JHUFF_TBL; 4], //[NUM_HUFF_TBLS],
-  ac_huff_tbl_ptrs: [*mut JHUFF_TBL; 4], //[NUM_HUFF_TBLS],
+  dc_huff_tbl_ptrs: [*mut JHUFF_TBL; NUM_HUFF_TBLS],
+  ac_huff_tbl_ptrs: [*mut JHUFF_TBL; NUM_HUFF_TBLS],
 
-  arith_dc_L: [u8; 16], //[NUM_ARITH_TBLS],
-  arith_dc_U: [u8; 16], //[NUM_ARITH_TBLS],
-  arith_ac_K: [u8; 16], //[NUM_ARITH_TBLS],
+  arith_dc_L: [u8; NUM_ARITH_TBLS],
+  arith_dc_U: [u8; NUM_ARITH_TBLS],
+  arith_ac_K: [u8; NUM_ARITH_TBLS],
 
   num_scans: c_int,
-  scan_info: *mut jpeg_scan_info,
+  scan_info: *const jpeg_scan_info,
 
   raw_data_in: boolean,
   arith_code: boolean,
@@ -203,13 +214,13 @@ jpeg_common_fields_struct!{ jpeg_compress_struct,
   total_iMCU_rows: JDIMENSION,
 
   comps_in_scan: c_int,
-  cur_comp_info: [*mut jpeg_component_info; 4], //[MAX_COMPS_IN_SCAN],
+  cur_comp_info: [*mut jpeg_component_info; MAX_COMPS_IN_SCAN],
 
   MCUs_per_row: JDIMENSION,
   MCU_rows_in_scan: JDIMENSION,
 
   blocks_in_MCU: c_int,
-  MCU_membership: [c_int; 10], //[C_MAX_BLOCKS_IN_MCU],
+  MCU_membership: [c_int; C_MAX_BLOCKS_IN_MCU],
 
   Ss: c_int, Se: c_int, Ah: c_int, Al: c_int,
 
@@ -237,7 +248,7 @@ impl Default for jpeg_compress_struct {
     jpeg_compress_struct {
       err: ptr::null_mut(),
       mem: ptr::null_mut(),
-      jpeg_progress_mgr: ptr::null_mut(),
+      progress: ptr::null_mut(),
       client_data: ptr::null_mut(),
       is_decompressor: 0,
       global_state: 0,
@@ -264,18 +275,18 @@ impl Default for jpeg_compress_struct {
       jpeg_color_space: 0,
 
       comp_info: ptr::null_mut(),
-      quant_tbl_ptrs: [ptr::null_mut(); 4],
+      quant_tbl_ptrs: [ptr::null_mut(); NUM_QUANT_TBLS],
 
       //#[cfg(JPEG_LIB_VERSION >= 70)]
-      // q_scale_factor: [c_int, ..4] //[NUM_QUANT_TBLS],
+      // q_scale_factor: [c_int; NUM_QUANT_TBLS],
       //#[end]
 
-      dc_huff_tbl_ptrs: [ptr::null_mut(); 4],
-      ac_huff_tbl_ptrs: [ptr::null_mut(); 4],
+      dc_huff_tbl_ptrs: [ptr::null_mut(); NUM_HUFF_TBLS],
+      ac_huff_tbl_ptrs: [ptr::null_mut(); NUM_HUFF_TBLS],
 
-      arith_dc_L: [0; 16],
-      arith_dc_U: [0; 16],
-      arith_ac_K: [0; 16],
+      arith_dc_L: [0; NUM_ARITH_TBLS],
+      arith_dc_U: [0; NUM_ARITH_TBLS],
+      arith_ac_K: [0; NUM_ARITH_TBLS],
 
       num_scans: 0,
       scan_info: ptr::null_mut(),
@@ -316,13 +327,13 @@ impl Default for jpeg_compress_struct {
       total_iMCU_rows: 0,
 
       comps_in_scan: 0,
-      cur_comp_info: [ptr::null_mut(); 4],
+      cur_comp_info: [ptr::null_mut(); MAX_COMPS_IN_SCAN],
 
       MCUs_per_row: 0,
       MCU_rows_in_scan: 0,
 
       blocks_in_MCU: 0,
-      MCU_membership: [0; 10],
+      MCU_membership: [0; C_MAX_BLOCKS_IN_MCU],
 
       Ss: 0, Se: 0, Ah: 0, Al: 0,
 
@@ -346,6 +357,7 @@ impl Default for jpeg_compress_struct {
     }
   }
 }
+
 
 jpeg_common_fields_struct!{ jpeg_decompress_struct,
   src: *const jpeg_source_mgr,
@@ -397,12 +409,12 @@ jpeg_common_fields_struct!{ jpeg_decompress_struct,
   output_scan_number: c_int,
   output_iMCU_row: JDIMENSION,
 
-  coef_bits: [*mut c_int; 64], //[DCTSIZE2],
+  coef_bits: *mut [c_int; DCTSIZE2],
 
-  quant_tbl_ptrs: [*mut JQUANT_TBL; 4], //[NUM_QUANT_TBLS],
+  quant_tbl_ptrs: [*mut JQUANT_TBL; NUM_QUANT_TBLS],
 
-  dc_huff_tbl_ptrs: [*mut JHUFF_TBL; 4], //[NUM_HUFF_TBLS],
-  ac_huff_tbl_ptrs: [*mut JHUFF_TBL; 4], //[NUM_HUFF_TBLS],
+  dc_huff_tbl_ptrs: [*mut JHUFF_TBL; NUM_HUFF_TBLS],
+  ac_huff_tbl_ptrs: [*mut JHUFF_TBL; NUM_HUFF_TBLS],
 
   data_precision: c_int,
 
@@ -414,9 +426,9 @@ jpeg_common_fields_struct!{ jpeg_decompress_struct,
   progressive_mode: boolean,
   arith_code: boolean,
 
-  arith_dc_L: [u8; 16], //[NUM_ARITH_TBLS],
-  arith_dc_U: [u8; 16], //[NUM_ARITH_TBLS],
-  arith_ac_K: [u8; 16], //[NUM_ARITH_TBLS],
+  arith_dc_L: [u8; NUM_ARITH_TBLS],
+  arith_dc_U: [u8; NUM_ARITH_TBLS],
+  arith_ac_K: [u8; NUM_ARITH_TBLS],
 
   restart_interval: c_uint,
 
@@ -448,13 +460,13 @@ jpeg_common_fields_struct!{ jpeg_decompress_struct,
 
   sample_range_limit: *mut JSAMPLE,
   comps_in_scan: c_int,
-  cur_comp_info: [*mut jpeg_component_info; 4], //[MAX_COMPS_IN_SCAN],
+  cur_comp_info: [*mut jpeg_component_info; MAX_COMPS_IN_SCAN],
 
   MCUs_per_row: JDIMENSION,
   MCU_rows_in_scan: JDIMENSION,
 
   blocks_in_MCU: c_int,
-  MCU_membership: [c_int; 10], //[D_MAX_BLOCKS_IN_MCU],
+  MCU_membership: [c_int; D_MAX_BLOCKS_IN_MCU],
 
   Ss: c_int, Se: c_int, Ah: c_int, Al: c_int,
 
@@ -479,6 +491,150 @@ jpeg_common_fields_struct!{ jpeg_decompress_struct,
   cquantize: *mut jpeg_color_quantizer
 }
 
+impl Default for jpeg_decompress_struct {
+  fn default() -> jpeg_decompress_struct {
+    jpeg_decompress_struct {
+      err: ptr::null_mut(),
+      mem: ptr::null_mut(),
+      progress: ptr::null_mut(),
+      client_data: ptr::null_mut(),
+      is_decompressor: 0,
+      global_state: 0,
+
+      src: ptr::null_mut(),
+
+      image_width: 0,
+      image_height: 0,
+      num_components: 0,
+      jpeg_color_space: 0,
+
+      out_color_space: 0,
+
+      scale_num: 0,
+      scale_denom: 0,
+
+      output_gamma: 0.0,
+
+      buffered_image: 0,
+      raw_data_out: 0,
+
+      dct_method: 0,
+      do_fancy_upsampling: 0,
+      do_block_smoothing: 0,
+
+      quantize_colors: 0,
+
+      dither_mode: 0,
+      two_pass_quantize: 0,
+      desired_number_of_colors: 0,
+
+      enable_1pass_quant: 0,
+      enable_external_quant: 0,
+      enable_2pass_quant: 0,
+
+      output_width: 0,
+      output_height: 0,
+      out_color_components: 0,
+      output_components: 0,
+
+      rec_outbuf_height: 0,
+
+      actual_number_of_colors: 0,
+      colormap: ptr::null_mut(),
+
+      output_scanline: 0,
+
+      input_scan_number: 0,
+      input_iMCU_row: 0,
+
+      output_scan_number: 0,
+      output_iMCU_row: 0,
+
+      coef_bits: ptr::null_mut(),
+
+      quant_tbl_ptrs: [ptr::null_mut(); NUM_QUANT_TBLS],
+
+      dc_huff_tbl_ptrs: [ptr::null_mut(); NUM_HUFF_TBLS],
+      ac_huff_tbl_ptrs: [ptr::null_mut(); NUM_HUFF_TBLS],
+
+      data_precision: 0,
+
+      comp_info: ptr::null_mut(),
+
+      //#if JPEG_LIB_VERSION >= 80
+      //  is_baseline: boolean,
+      //#endif
+      progressive_mode: 0,
+      arith_code: 0,
+
+      arith_dc_L: [0u8; NUM_ARITH_TBLS],
+      arith_dc_U: [0u8; NUM_ARITH_TBLS],
+      arith_ac_K: [0u8; NUM_ARITH_TBLS],
+
+      restart_interval: 0,
+
+      saw_JFIF_marker: 0,
+
+      JFIF_major_version: 0,
+      JFIF_minor_version: 0,
+      density_unit: 0,
+      X_density: 0,
+      Y_density: 0,
+      saw_Adobe_marker: 0,
+      Adobe_transform: 0,
+
+      CCIR601_sampling: 0,
+
+      marker_list: ptr::null_mut(),
+
+      max_h_samp_factor: 0,
+      max_v_samp_factor: 0,
+
+      //#if JPEG_LIB_VERSION >= 70
+      //  min_DCT_h_scaled_size: c_int,
+      //  min_DCT_v_scaled_size: c_int,
+      //#else
+      min_DCT_scaled_size: 0,
+      //#endif
+
+      total_iMCU_rows: 0,
+
+      sample_range_limit: ptr::null_mut(),
+      comps_in_scan: 0,
+      cur_comp_info: [ptr::null_mut(); MAX_COMPS_IN_SCAN],
+
+      MCUs_per_row: 0,
+      MCU_rows_in_scan: 0,
+
+      blocks_in_MCU: 0,
+      MCU_membership: [0; D_MAX_BLOCKS_IN_MCU],
+
+      Ss: 0, Se: 0, Ah: 0, Al: 0,
+
+      //#if JPEG_LIB_VERSION >= 80
+      //  block_size: c_int,
+      //  natural_order: *c_int,
+      //  lim_Se: c_int,
+      //#endif
+
+      unread_marker: 0,
+
+      master: ptr::null_mut(),
+      main: ptr::null_mut(),
+      coef: ptr::null_mut(),
+      post: ptr::null_mut(),
+      inputctl: ptr::null_mut(),
+      marker: ptr::null_mut(),
+      entropy: ptr::null_mut(),
+      idct: ptr::null_mut(),
+      upsample: ptr::null_mut(),
+      cconvert: ptr::null_mut(),
+      cquantize: ptr::null_mut()
+    }
+  }
+}
+
+
 #[repr(C)]
 pub struct jpeg_error_mgr {
   pub error_exit: Option<extern fn(cinfo: j_common_ptr)>,
@@ -489,15 +645,15 @@ pub struct jpeg_error_mgr {
 
   pub msg_code: c_int,
 
-  pub msg_parm: *mut c_char,
+  pub msg_parm: [c_char; 80],
 
   pub trace_level: c_int,
   pub num_warnings: c_long,
 
-  pub jpeg_message_table: *mut *mut c_char,
+  pub jpeg_message_table: *mut *const c_char,
   pub last_jpeg_message: c_int,
 
-  pub addon_message_table: *mut *mut c_char,
+  pub addon_message_table: *mut *const c_char,
   pub first_addon_message: c_int,
   pub last_addon_message: c_int
 }
@@ -507,7 +663,7 @@ impl Default for jpeg_error_mgr {
     jpeg_error_mgr {
       error_exit: None, emit_message: None, output_message: None,
       format_message: None, reset_error_mgr: None,
-      msg_code: 0, msg_parm: ptr::null_mut(), trace_level: 0, num_warnings: 0,
+      msg_code: 0, msg_parm: [0; 80], trace_level: 0, num_warnings: 0,
       jpeg_message_table: ptr::null_mut(), last_jpeg_message: 0,
       addon_message_table: ptr::null_mut(), first_addon_message: 0,
       last_addon_message: 0
@@ -677,6 +833,13 @@ extern "C" {
   pub fn jpeg_CreateDecompress(cinfo: j_decompress_ptr, version: c_int,
                                structsize: size_t);
 
+  pub fn jpeg_read_coefficients(cinfo: j_decompress_ptr)
+                                -> *const jvirt_barray_ptr;
+  pub fn jpeg_write_coefficients (cinfo: j_compress_ptr,
+                                  coef_arrays: *const jvirt_barray_ptr);
+  pub fn jpeg_copy_critical_parameters(srcinfo: j_decompress_ptr,
+                                       dstinfo: j_compress_ptr);
+
   pub fn jpeg_abort_compress(cinfo: j_compress_ptr);
 
   pub fn jpeg_add_quant_table(cinfo: j_compress_ptr, which_tbl: c_int,
@@ -702,8 +865,8 @@ extern "C" {
 
   pub fn jpeg_simple_progression(cinfo: j_compress_ptr);
 
-  pub fn jpeg_stdio_dest(cinfo: j_compress_ptr, outfile: *const FILE);
-  pub fn jpeg_stdio_src(cinfo: j_decompress_ptr, infile: *const FILE);
+  pub fn jpeg_stdio_dest(cinfo: j_compress_ptr, outfile: *mut FILE);
+  pub fn jpeg_stdio_src(cinfo: j_decompress_ptr, infile: *mut FILE);
 
   pub fn jpeg_std_error(err: *mut jpeg_error_mgr) -> *mut jpeg_error_mgr;
 
