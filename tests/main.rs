@@ -1,10 +1,8 @@
 #![feature(libc)]
-#![feature(std_misc)]
 
 extern crate stegpeg;
 extern crate libc;
 
-//use libc;
 use std::default::Default;
 use std::ffi::CString;
 

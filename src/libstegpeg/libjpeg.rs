@@ -21,7 +21,7 @@ pub const MAX_COMPONENTS: usize = 10;
 pub const C_MAX_BLOCKS_IN_MCU: usize = 10;
 pub const D_MAX_BLOCKS_IN_MCU: usize = 10;
 
-pub const JPOOL_IMAGE: u8 = 1;
+pub const JPOOL_IMAGE: i32 = 1;
 
 pub type boolean = c_int;
 
@@ -671,9 +671,9 @@ impl Default for jpeg_error_mgr {
   }
 }
 
-impl Default for *mut jpeg_error_mgr {
-  fn default() -> *mut jpeg_error_mgr { ptr::null_mut() }
-}
+//impl Default for *mut jpeg_error_mgr {
+//  fn default() -> *mut jpeg_error_mgr { ptr::null_mut() }
+//}
 
 
 #[repr(C)]
@@ -686,9 +686,9 @@ pub struct jpeg_progress_mgr {
   pub total_passes: c_int
 }
 
-impl Default for *mut jpeg_progress_mgr {
-  fn default() -> *mut jpeg_progress_mgr { ptr::null_mut() }
-}
+//impl Default for *mut jpeg_progress_mgr {
+//  fn default() -> *mut jpeg_progress_mgr { ptr::null_mut() }
+//}
 
 #[repr(C)]
 pub struct jpeg_destination_mgr {
@@ -768,9 +768,9 @@ pub struct jpeg_memory_mgr {
   pub max_alloc_chunk: c_long
 }
 
-impl Default for *mut jpeg_memory_mgr {
-  fn default() -> *mut jpeg_memory_mgr { ptr::null_mut() }
-}
+//impl Default for *mut jpeg_memory_mgr {
+//  fn default() -> *mut jpeg_memory_mgr { ptr::null_mut() }
+//}
 
 // pub type jpeg_marker_parser_method =
 //   extern fn(cinfo: j_decompress_ptr) -> boolean;
