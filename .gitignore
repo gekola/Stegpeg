@@ -1,7 +1,10 @@
 bin
 lib
-tests/test
-tests/lsb
+tests/*
+!tests/*.rs
+!tests/files
+tests/files/test*.txt
+!tests/files/test1k.txt
 
 *.o
 *.jpeg

@@ -1,3 +1,6 @@
+TESTS= $(patsubst tests/%.rs,%.test,$(wildcard tests/*.rs))
+TEST_INPUT_SIZES= 10k 100k
+
 all: libstegpeg
 
 rebuild: clean all
@@ -11,11 +14,11 @@ libstegpeg: src/libstegpeg/lib.rs lib/libjpeglib_macrofuns.a
 lib/libjpeglib_macrofuns.a: c_src/jpeglib_macrofuns.o lib
 	$(AR) rcs $@ $<
 
-tests/test: tests/main.rs libstegpeg lib/libjpeglib_macrofuns.a
+tests/%: tests/%.rs libstegpeg
 	rustc -g -L ./lib -l stegpeg --test -o $@ $<
 
-tests/lsb: tests/lsb.rs libstegpeg lib/libjpeglib_macrofuns.a
-	rustc -g -L ./lib -l stegpeg --test -o $@ $<
+tests/files/test%k.txt:
+	for i in {1..$*}; do cat tests/files/test1k.txt; done > tests/files/test$*k.txt
 
 %.o: %.c
 	$(CC) -fPIC $< -c -o $@
@@ -23,9 +26,12 @@ tests/lsb: tests/lsb.rs libstegpeg lib/libjpeglib_macrofuns.a
 clean:
 	rm -rf lib tests/test c_src/*.o mtest
 
-test: tests/test tests/lsb
-	# LD_LIBRARY_PATH="$LD_LIBRARY_PATH:./lib" $^
-	$(foreach test,$^, LD_LIBRARY_PATH="$LD_LIBRARY_PATH:./lib" $(test);)
+%.test: tests/% tests-prepare
+	@LD_LIBRARY_PATH="$LD_LIBRARY_PATH:./lib" $<
+
+test: $(TESTS)
+
+test-prepare: $(foreach sz,$(TEST_INPUT_SIZES),tests/files/test$(sz).txt)
 
 # Use for manual testing
 mtest:
@@ -33,4 +39,4 @@ mtest:
 	cat tests/files/test.txt | LD_LIBRARY_PATH="$LD_LIBRARY_PATH:./lib" ./mtest tests/files/lena.jpg /tmp/out.jpg
 	LD_LIBRARY_PATH="$LD_LIBRARY_PATH:./lib" ./mtest /tmp/out.jpg
 
-.PHONY: all rebuild clean test libstegpeg mtest
+.PHONY: all rebuild clean test libstegpeg tests-prepare mtest %.test
