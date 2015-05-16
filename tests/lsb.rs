@@ -41,7 +41,7 @@ fn test_lsb() {
 }
 
 #[test]
-fn test_lsb_tool_long() {
+fn test_lsb_too_long() {
   let path = Path::new(SECRET100_PATH);
   let mut file = match File::open(&path) {
     Ok(file) => file,

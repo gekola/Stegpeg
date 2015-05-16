@@ -7,7 +7,6 @@
                         *  *              *
                      ***   *           ***/
 
-
 #![crate_name = "stegpeg"]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
