@@ -10,11 +10,13 @@ use stegpeg::libjpeg;
 
 #[test]
 fn test_write() {
-  let mut image_buffer = [0 as libc::c_uchar; 120_000];
+  let mut image_buffer = [30 as libc::c_uchar; 120_000];
 
   for i in 1..120_000 {
-    if i % 3 == 0 {
-      image_buffer[i] = 255 as libc::c_uchar
+    if i % 3 != 2 {
+      image_buffer[i] = ((1f32 - ((100 - (i / 600) as i16).pow(2) +
+                                  (100 - (i % 600 / 3) as i16).pow(2)) as f32 /
+                          20_000f32) * 255f32) as libc::c_uchar
     }
   }
 
@@ -39,7 +41,7 @@ fn test_write() {
     cinfo.in_color_space = 2; // RGB
 
     libjpeg::jpeg_set_defaults(&mut *pcinfo);
-    libjpeg::jpeg_set_quality(pcinfo, 5, 1);
+    libjpeg::jpeg_set_quality(pcinfo, 30, 1);
     libjpeg::jpeg_start_compress(pcinfo, 1);
 
     row_stride = image_width * 3;

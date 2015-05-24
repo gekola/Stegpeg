@@ -1,7 +1,7 @@
 use algorythms::common::CoefArray;
 
 pub fn enc<'a>(coefs: &'a mut CoefArray, data: &Vec<u8>)
-           -> Result<&'a CoefArray, &'a str> {
+               -> Result<&'a CoefArray, &'a str> {
   let data_sz = data.len();
   let size = data_sz + 8;
   let comp =

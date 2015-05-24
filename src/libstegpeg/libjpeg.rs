@@ -835,8 +835,8 @@ extern "C" {
 
   pub fn jpeg_read_coefficients(cinfo: j_decompress_ptr)
                                 -> *const jvirt_barray_ptr;
-  pub fn jpeg_write_coefficients (cinfo: j_compress_ptr,
-                                  coef_arrays: *const jvirt_barray_ptr);
+  pub fn jpeg_write_coefficients(cinfo: j_compress_ptr,
+                                 coef_arrays: *const jvirt_barray_ptr);
   pub fn jpeg_copy_critical_parameters(srcinfo: j_decompress_ptr,
                                        dstinfo: j_compress_ptr);
 
