@@ -5,6 +5,9 @@ tests/*
 !tests/files
 tests/files/test*.txt
 !tests/files/test1k.txt
+target
+
+Cargo.lock
 
 *.o
 *.jpeg
