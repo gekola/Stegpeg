@@ -5,7 +5,10 @@ authors = ["Nick Herman <gerkola@gmail.com>"]
 build = "build.rs"
 
 [build-dependencies]
-gcc = ">=0.3.5"
+gcc = "^0"
+
+[dependencies]
+libc = "^0"
 
 [lib]
 name = "stegpeg"
@@ -16,3 +19,10 @@ doctest = false
 bench = true
 plugin = false
 harness = true
+
+[[bin]]
+name = "extract_c"
+path = "src/utils/extract_c.rs"
+test = false
+doctest = false
+bench = false

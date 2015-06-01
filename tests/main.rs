@@ -1,5 +1,3 @@
-#![feature(libc)]
-
 extern crate stegpeg;
 extern crate libc;
 

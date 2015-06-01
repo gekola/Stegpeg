@@ -1,8 +1,6 @@
-bin
-lib
-tests/*
-!tests/*.rs
-!tests/files
+# tests/*
+# !tests/*.rs
+# !tests/files
 tests/files/test*.txt
 !tests/files/test1k.txt
 target

@@ -15,9 +15,14 @@ pub fn enc<'a>(coefs: &'a mut CoefArray, data: &Vec<u8>)
       acc
     });
 
+  // Current bit
   let mut ind = 0usize;
+
+  // Components
   for x in coefs.iter_mut() {
+    // Rows
     for x in x.iter_mut() {
+      // Blocks
       for x in x.iter_mut() {
         for i in 0..x.len() {
           if x[i] & 0x1 != x[i] {
@@ -50,20 +55,30 @@ pub fn enc<'a>(coefs: &'a mut CoefArray, data: &Vec<u8>)
 
 pub fn dec(coefs: & CoefArray) -> Result<Vec<u8>, &str> {
   let mut data = Vec::<u8>::new();
+  // Size bits width (in bits)
   let mut szw = 0usize;
+  // Payload size (in bytes)
   let mut size = 0usize;
 
+  // Current bit
   let mut ind = 0usize;
+
+  // Components
   for x in coefs.iter() {
+    // Rows
     for x in x.iter() {
+      // Blocks
       for x in x.iter() {
         for p in x.iter() {
           if *p & 0x1 != *p {
             if ind < AWIDTH {
+              // Read payload size block width
               szw |= (*p as usize & 1) << ind;
             } else if ind < AWIDTH + szw + 1 {
+              // Read payload size
               size |= (*p as usize & 1) << (ind - AWIDTH);
             } else if ind < AWIDTH + szw + 1 + size * 8 {
+              // Read  payload data
               let cor_ind = ind - AWIDTH - szw - 1 as usize;
               let base = cor_ind / 8;
               let offset = cor_ind % 8;

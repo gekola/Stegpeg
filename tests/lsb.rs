@@ -8,7 +8,7 @@ use std::path::Path;
 use stegpeg::algorythms::lsb;
 
 const ORIG_IMG_PATH:  &'static str = "tests/files/lena.jpg";
-const SECRET10_PATH:  &'static str = "tests/files/test10k.txt";
+const SECRET10_PATH:  &'static str = "tests/files/test40k.txt";
 const SECRET100_PATH: &'static str = "tests/files/test100k.txt";
 const OUT_IMG_PATH:   &'static str = "/tmp/lsb_out.jpg";
 
