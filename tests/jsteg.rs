@@ -1,11 +1,12 @@
 extern crate stegpeg;
 
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-use stegpeg::algorythms::jsteg;
+use stegpeg::algorythms::{Algorythm,JSteg};
 
 const ORIG_IMG_PATH:  &'static str = "tests/files/lena.jpg";
 const SECRET10_PATH:  &'static str = "tests/files/test1k.txt";
@@ -26,13 +27,15 @@ fn test_jsteg() {
   match file.read_to_end(&mut data) {
     Ok(_) =>
       stegpeg::encode_file(ORIG_IMG_PATH, OUT_IMG_PATH, &|coefs| {
-        return jsteg::enc(coefs, &data)
+        let jsteg = JSteg::new(&HashMap::new());
+        return jsteg.enc(coefs, &data)
       }),
     Err(err) => panic!("couldn't write: {}", err)
   }
 
   let coefs = stegpeg::decode_file(OUT_IMG_PATH);
-  let new_data = match stegpeg::algorythms::jsteg::dec(&coefs) {
+  let jsteg = JSteg::new(&HashMap::new());
+  let new_data = match jsteg.dec(&coefs) {
     Ok(new_data) => new_data,
     Err(err)     => panic!("{}", err)
   };
@@ -54,7 +57,8 @@ fn test_jsteg_too_long() {
   match file.read_to_end(&mut data) {
     Ok(_) =>
       stegpeg::encode_file(ORIG_IMG_PATH, OUT_IMG_PATH, &|coefs| {
-        let res = jsteg::enc(coefs, &data);
+        let jsteg = JSteg::new(&HashMap::new());
+        let res = jsteg.enc(coefs, &data);
         match res {
           Ok(_)    => panic!("Encoding of a too long file should fail."),
           Err(err) => assert!(err == "Image is too small")

@@ -8,8 +8,8 @@ build = "build.rs"
 gcc = "^0"
 
 [dependencies]
-libc = "^0"
-
+libc = "*"
+num = "*"
 [lib]
 name = "stegpeg"
 path = "src/libstegpeg/lib.rs"

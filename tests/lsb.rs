@@ -1,11 +1,12 @@
 extern crate stegpeg;
 
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-use stegpeg::algorythms::lsb;
+use stegpeg::algorythms::{Algorythm,LSB};
 
 const ORIG_IMG_PATH:  &'static str = "tests/files/lena.jpg";
 const SECRET10_PATH:  &'static str = "tests/files/test40k.txt";
@@ -24,15 +25,18 @@ fn test_lsb() {
   let mut data: Vec<u8> = vec![];
 
   match file.read_to_end(&mut data) {
-    Ok(_) =>
+    Ok(_) => {
+      let lsb = LSB::new(&HashMap::new());
       stegpeg::encode_file(ORIG_IMG_PATH, OUT_IMG_PATH, &|coefs| {
-        return lsb::enc(coefs, &data)
-      }),
+        return lsb.enc(coefs, &data)
+      })
+    },
     Err(err) => panic!("couldn't write: {}", err)
   }
 
   let coefs = stegpeg::decode_file(OUT_IMG_PATH);
-  let new_data = match stegpeg::algorythms::lsb::dec(&coefs) {
+  let lsb = LSB::new(&HashMap::new());
+  let new_data = match lsb.dec(&coefs) {
     Ok(new_data) => new_data,
     Err(err)     => panic!("{}", err)
   };
@@ -54,7 +58,8 @@ fn test_lsb_too_long() {
   match file.read_to_end(&mut data) {
     Ok(_) =>
       stegpeg::encode_file(ORIG_IMG_PATH, OUT_IMG_PATH, &|coefs| {
-        let res = lsb::enc(coefs, &data);
+        let lsb = LSB::new(&HashMap::new());
+        let res = lsb.enc(coefs, &data);
         match res {
           Ok(_)    => panic!("Encoding of a too long file should fail."),
           Err(err) => assert!(err == "Image is too small")
